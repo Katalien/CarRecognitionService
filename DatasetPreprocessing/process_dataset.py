@@ -108,4 +108,4 @@ labels_save_path = f"{dataset_path}labels/"
 
 samples_dict = get_all_samples(labels_csv_path)
 # convert2yolo_format(samples_dict, labels_save_path)
-# check_one_sample(samples_dict, labels_save_path)
+check_one_sample(samples_dict, labels_save_path)
