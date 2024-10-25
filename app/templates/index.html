@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Car Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input[type="file"] {
+            margin: 10px;
+        }
+        button {
+            padding: 10px 50px;
+            font-size: 20px;
+            cursor: pointer;
+            margin: 5px;
+            width: 250px;
+            box-sizing: border-box;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .image-group {
+            margin-bottom: 20px;
+        }
+        .image-pair {
+            display: flex;
+            justify-content: center;
+        }
+        .image-container img {
+            max-width: 45%;
+            height: auto;
+            margin: 10px;
+        }
+        .boxes {
+            white-space: pre-wrap;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Car Detection</h1>
+<form id="upload-form">
+    <input type="file" id="images" name="images" accept="image/*" multiple required>
+    <button type="submit" id="upload-btn">Detect cars</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+        const images = document.getElementById('images').files;
+        for (let i = 0; i < images.length; i++) {
+            formData.append('images', images[i]);
+        }
+
+        const response = await fetch('/detect/', {
+            method: 'POST',
+            body: formData
+        });
+
+        const results = await response.json();
+
+        const resultContainer = document.getElementById('result');
+        resultContainer.innerHTML = '';
+
+        results.forEach((result, index) => {
+            const imageGroup = document.createElement('div');
+            imageGroup.classList.add('image-group');
+
+            const originalImageContainer = document.createElement('div');
+            originalImageContainer.classList.add('image-container');
+
+            const originalImage = document.createElement('img');
+            originalImage.src = URL.createObjectURL(images[index]);
+            originalImage.alt = `Original Image ${index + 1}`;
+            originalImageContainer.appendChild(originalImage);
+
+            const outputImage = document.createElement('img');
+            outputImage.src = `data:image/jpeg;base64,${result.image}`;
+            outputImage.alt = `Processed Image ${index + 1}`;
+            originalImageContainer.appendChild(outputImage);
+
+            const imagePair = document.createElement('div');
+            imagePair.classList.add('image-pair');
+            imagePair.appendChild(originalImageContainer);
+            imageGroup.appendChild(imagePair);
+
+            const boxes = document.createElement('div');
+            boxes.classList.add('boxes');
+            boxes.textContent = `Bounding Boxes for Image ${index + 1}:\n` + result.boxes.map(
+                box => `x1: ${box[0]}, y1: ${box[1]}, x2: ${box[2]}, y2: ${box[3]}`
+            ).join('\n');
+            imageGroup.appendChild(boxes);
+
+            resultContainer.appendChild(imageGroup);
+        });
+    });
+</script>
+
+</body>
+</html>
