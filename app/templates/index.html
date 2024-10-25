@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLO Car Detection</title>
+    <title>YOLO Video Capture Car Detection</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,6 +11,10 @@
         }
         h1 {
             text-align: center;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 20px;
         }
         form {
             display: flex;
@@ -33,13 +37,12 @@
             text-align: center;
         }
         .image-group {
-            margin-bottom: 20px;
-        }
-        .image-pair {
             display: flex;
+            align-items: center;
             justify-content: center;
+            margin-top: 10px;
         }
-        .image-container img {
+        .image-group img {
             max-width: 45%;
             height: auto;
             margin: 10px;
@@ -53,64 +56,69 @@
 </head>
 <body>
 
-<h1>Car Detection</h1>
+<h1>YOLO Car Detection</h1>
 <form id="upload-form">
     <input type="file" id="images" name="images" accept="image/*" multiple required>
-    <button type="submit" id="upload-btn">Detect cars</button>
+    <button type="submit" id="upload-btn">Run car detection</button>
 </form>
 
-<div id="result"></div>
+<div id="result">
+    <h2>Results</h2>
+</div>
 
 <script>
     document.getElementById('upload-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const formData = new FormData();
         const images = document.getElementById('images').files;
+        const imagesBase64 = [];
+
         for (let i = 0; i < images.length; i++) {
-            formData.append('images', images[i]);
+            const reader = new FileReader();
+            reader.readAsDataURL(images[i]);
+            await new Promise((resolve) => {
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    imagesBase64.push(base64String);
+                    resolve();
+                };
+            });
         }
 
         const response = await fetch('/detect/', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ images: imagesBase64 })
         });
 
         const results = await response.json();
 
         const resultContainer = document.getElementById('result');
-        resultContainer.innerHTML = '';
+        resultContainer.innerHTML = ''; // Clear previous results
 
         results.forEach((result, index) => {
             const imageGroup = document.createElement('div');
             imageGroup.classList.add('image-group');
 
-            const originalImageContainer = document.createElement('div');
-            originalImageContainer.classList.add('image-container');
-
             const originalImage = document.createElement('img');
             originalImage.src = URL.createObjectURL(images[index]);
             originalImage.alt = `Original Image ${index + 1}`;
-            originalImageContainer.appendChild(originalImage);
+            imageGroup.appendChild(originalImage);
 
             const outputImage = document.createElement('img');
             outputImage.src = `data:image/jpeg;base64,${result.image}`;
             outputImage.alt = `Processed Image ${index + 1}`;
-            originalImageContainer.appendChild(outputImage);
-
-            const imagePair = document.createElement('div');
-            imagePair.classList.add('image-pair');
-            imagePair.appendChild(originalImageContainer);
-            imageGroup.appendChild(imagePair);
+            imageGroup.appendChild(outputImage);
 
             const boxes = document.createElement('div');
             boxes.classList.add('boxes');
             boxes.textContent = `Bounding Boxes for Image ${index + 1}:\n` + result.boxes.map(
                 box => `x1: ${box[0]}, y1: ${box[1]}, x2: ${box[2]}, y2: ${box[3]}`
             ).join('\n');
-            imageGroup.appendChild(boxes);
-
             resultContainer.appendChild(imageGroup);
+            resultContainer.appendChild(boxes);
         });
     });
 </script>

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from PIL import Image
@@ -8,6 +8,11 @@ from ultralytics import YOLO
 from typing import List
 import cv2
 import numpy as np
+from pydantic import BaseModel
+
+class ImageBase64Request(BaseModel):
+    images: List[str]
+
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates/")
@@ -19,10 +24,11 @@ async def index():
 
 
 @app.post("/detect/")
-async def detect_images(images: List[UploadFile] = File(...)):
+async def detect_images(request: ImageBase64Request):
     results = []
-    for image in images:
-        img = Image.open(image.file)
+    for image_str in request.images:
+        image_data = base64.b64decode(image_str)
+        img = Image.open(io.BytesIO(image_data))
         img_array = np.array(img)
 
         detections = model(img_array)
@@ -31,7 +37,6 @@ async def detect_images(images: List[UploadFile] = File(...)):
         for box in detections[0].boxes.xyxy:
             x1, y1, x2, y2 = map(int, box[:4])
             boxes_output.append([x1, y1, x2, y2])
-            # Draw bounding box on the image
             cv2.rectangle(img_array, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
         bbox_img = Image.fromarray(img_array)
