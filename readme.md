@@ -9,7 +9,7 @@ git clone https://github.com/Katalien/CarRecognotionService.git
 ```
 2. Navigate to the cloned repository folder:
 ```commandline
-cd CarRecognotionService
+cd CarRecognitionService
 ```
 3. Build the Docker container:
 ```commandline
