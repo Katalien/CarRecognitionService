@@ -15,8 +15,8 @@ class ImageBase64Request(BaseModel):
 
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates/")
-model = YOLO('../model/video_capture_yolo.pt')
+templates = Jinja2Templates(directory="app/templates/")
+model = YOLO('model/video_capture_yolo.pt')
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
